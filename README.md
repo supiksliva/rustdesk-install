@@ -1,0 +1,2 @@
+\# RustDesk Server Auto-Install
+
