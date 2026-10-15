@@ -40,11 +40,12 @@ install_rustdesk() {
     echo "Настраиваем RustDesk для адреса: $HOST"
     echo "Устанавливаем необходимые пакеты..."
     if command -v apt-get &>/dev/null; then
-        apt-get update -qq && apt-get install -y -qq curl wget unzip tar ufw &>/dev/null
+        apt-get update -qq && apt-get install -y -qq curl wget unzip tar ufw qrencode &>/dev/null
     elif command -v dnf &>/dev/null; then
-        dnf install -y -q curl wget unzip tar &>/dev/null
+        dnf install -y -q curl wget unzip tar qrencode &>/dev/null
     elif command -v yum &>/dev/null; then
-        yum install -y -q curl wget unzip tar &>/dev/null
+        yum install -y -q epel-release curl wget unzip tar &>/dev/null || true
+        yum install -y -q qrencode &>/dev/null || true
     fi
 
     ARCH=$(uname -m)
@@ -131,14 +132,26 @@ UNIT_HBBR
     done
 
     KEY=$(cat "$INSTALL_DIR/id_ed25519.pub" 2>/dev/null || echo "Генерируется... выполните позже: cat $INSTALL_DIR/id_ed25519.pub")
+    CONFIG_DATA="host=${HOST},key=${KEY}"
 
     echo ""
     echo "Готово! RustDesk Server установлен и запущен."
     echo ""
     echo "Адрес сервера (ID/Relay): $HOST"
     echo "Ключ (Key):               $KEY"
+    echo "Строка конфигурации:      $CONFIG_DATA"
     echo ""
-    echo "В клиенте RustDesk укажите адрес в поле 'ID-сервер' и скопируйте ключ."
+    echo "QR-код для быстрого подключения:"
+    echo ""
+
+    if command -v qrencode &>/dev/null; then
+        qrencode -t ANSIUTF8 "$CONFIG_DATA"
+    else
+        curl -s "https://qrenco.de/$CONFIG_DATA" || true
+    fi
+
+    echo ""
+    echo "В клиенте RustDesk укажите адрес в поле 'ID-сервер' и ключ (или отсканируйте QR)."
 }
 
 install_3xui() {
