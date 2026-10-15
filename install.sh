@@ -132,26 +132,37 @@ UNIT_HBBR
     done
 
     KEY=$(cat "$INSTALL_DIR/id_ed25519.pub" 2>/dev/null || echo "Генерируется... выполните позже: cat $INSTALL_DIR/id_ed25519.pub")
-    CONFIG_DATA="host=${HOST},key=${KEY}"
+
+    # Генерация официальной строки конфигурации RustDesk (Base64 JSON в обратном порядке)
+    JSON_CFG="{\"host\":\"$HOST\",\"relay\":\"$HOST\",\"api\":\"\",\"key\":\"$KEY\"}"
+    if command -v rev &>/dev/null; then
+        CONFIG_STRING=$(printf '%s' "$JSON_CFG" | base64 | tr -d '\n\r=' | rev)
+    else
+        CONFIG_STRING=$(printf '%s' "$JSON_CFG" | base64 | tr -d '\n\r=' | awk '{ for(i=length;i>0;i--) printf "%s",substr($0,i,1); print "" }')
+    fi
 
     echo ""
     echo "Готово! RustDesk Server установлен и запущен."
     echo ""
     echo "Адрес сервера (ID/Relay): $HOST"
     echo "Ключ (Key):               $KEY"
-    echo "Строка конфигурации:      $CONFIG_DATA"
     echo ""
-    echo "QR-код для быстрого подключения:"
+    echo "Строка конфигурации (для импорта в один клик):"
+    echo "$CONFIG_STRING"
+    echo ""
+    echo "QR-код для подключения (отсканируйте сканером в RustDesk):"
     echo ""
 
     if command -v qrencode &>/dev/null; then
-        qrencode -t ANSIUTF8 "$CONFIG_DATA"
+        qrencode -t ANSIUTF8 "$CONFIG_STRING"
     else
-        curl -s "https://qrenco.de/$CONFIG_DATA" || true
+        curl -s "https://qrenco.de/$CONFIG_STRING" || true
     fi
 
     echo ""
-    echo "В клиенте RustDesk укажите адрес в поле 'ID-сервер' и ключ (или отсканируйте QR)."
+    echo "Как применить:"
+    echo "• На телефоне: откройте RustDesk -> Настройки -> Сеть -> значок QR вверху."
+    echo "• На ПК: откройте RustDesk -> Настройки -> Сеть -> вставьте строку конфигурации."
 }
 
 install_3xui() {
